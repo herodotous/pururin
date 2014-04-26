@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+# pururin
+# 
+# Utility to download Doujinshi chapters from pururin.com
+# 
+# @author Herodotous
+# @license @Artistic License
+
+import sys
+import urllib
+import urllib2
+import httplib
+import os
+import shutil
+import tempfile
+import glob
+import re; 
+from BeautifulSoup import BeautifulSoup
+
+class DoujinshiDownloader:
+    targetDir = ''
+    totalVideos = 0
+    downloaded = 0
+    totalDoujins = 0
+    links="";
+
+    def setTarget(self, target):
+	    self.targetDir = os.path.realpath(target) + '/';
+	    return self.targetDir
+
+    def download(self, sourceF):
+        print 'Getting link info'
+        fp=open(sourceF,"r");
+        self.links= fp.readlines();
+        self.totalDoujins = len(self.links)
+        fp.close();
+        
+        print 'Total Doujins to download: ' + str(self.totalDoujins)
+
+        for i in xrange(self.totalDoujins):
+            os.chdir(self.targetDir);
+            url= self.links[i].split("\n")[0];
+	    
+	    title= url.split('/')[5].split('.')[0];
+            chapterID= url.split('/')[4];
+	    
+	    doujinDir= self.createPath(self.targetDir,title);
+            os.chdir(doujinDir)
+	    	
+	    pages= self.fetchPage(url);
+	    print pages	 
+	    for j in xrange(int(pages)):
+	    	newUrl="http://pururin.com/view/"+chapterID+"/0"+str(j)+"/"+title+"_"+str(j+1)+".html"
+		image=self.fetchImage(newUrl,title+"-"+str(j+1));
+		fp=open(str(j+1)+".jpg",'w');
+		fp.write(image);
+		fp.close();
+	  	 	
+	    #image = self.fetchPage(url)
+            ## other information to be extracted 
+    def fetchPage(self,url):
+	    try:
+	    	req=urllib2.Request(url,headers={'User-Agent' : "Magic Browser"});
+		response = urllib2.urlopen(req);
+	    except urllib2.HTTPError, e:
+	    	print e.fp.read();
+	    
+	    data = response.read();
+	    response.close();
+	    data=data.split('Pages');
+	    return data[1][9:11]
+    
+    def fetchImage(self,url,title):	
+	    try:
+	    	req=urllib2.Request(url,headers={'User-Agent' : "Magic Browser"});
+		response = urllib2.urlopen(req);
+	    except urllib2.HTTPError, e:
+	    	print e.fp.read();
+	    
+	    data = response.read();
+	    response.close();
+	    data=data.split(title)[0];
+            data=data.split('"')[-1]
+	    url="http://pururin.com"+data+title+".jpg"
+	    try:
+	    	req=urllib2.Request(url,headers={'User-Agent' : "Magic Browser"});
+		response = urllib2.urlopen(req);
+	    except urllib2.HTTPError, e:
+	    	print e.fp.read();
+	    
+	    data=response.read();
+	    response.close()
+	    return data;
+
+    def createPath(self, path, title):
+	    print title
+	    title = title.replace('/', '')
+            number = ''
+
+            if os.path.exists(path + title) == True and os.path.isdir(path + title) == False:
+            	while(os.path.exists(path + title + str(number)) == True and os.path.isdir(path + title + str(number)) == False):
+                	if number == '':
+                    		number = 0
+
+                	number = number + 1
+
+            if os.path.exists(path + title + str(number)) == False:
+            	os.mkdir(path + title + str(number))
+
+            return path + title + str(number)
+
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print 'Usage: pururin [SourceFile] [DESTINATION_PATH]'
+        sys.exit(1)
+
+    downloader = DoujinshiDownloader()
+    if len(sys.argv) == 3:
+        downloader.setTarget(sys.argv[2] + '/')
+    else:
+        downloader.setTarget('./')
+    downloader.download(sys.argv[1]);
