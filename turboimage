@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# pururin
+# 
+# Utility to download Doujinshi chapters from pururin.com
+# 
+# @author Herodotous
+# @license @Artistic License
+
+import sys
+import urllib
+import urllib2
+import httplib
+import os
+import shutil
+import tempfile
+import glob
+import re; 
+import lxml.html
+
+class DoujinshiDownloader:
+    targetDir = ''
+    downloaded = 0
+    totalDoujins = 0
+
+    def setTarget(self, target):
+	    self.targetDir = os.path.realpath(target) + '/';
+	    return self.targetDir
+
+    def download(self, sourceF):
+        print 'Getting link info'
+	fileList=glob.glob(sourceF+"/*.jpg");
+        
+	self.totalDoujins = len(fileList);
+        print 'Total Doujins to download: ' + str(self.totalDoujins)
+	
+        os.chdir(self.targetDir);
+	
+	for j in fileList:
+		j=j.split('/')[1];
+		idx=j.split('_')[0];
+		title=j[len(idx)+1:];
+		os.system("pwd");
+		if(os.path.isfile(title)):
+			continue;
+		
+		iurl="http://www.turboimagehost.com/p/"+idx+"/"+title+".html";
+		downloadlink= self.fetchPage(iurl);
+		image=self.fetchImage(downloadlink);
+		fp=open(title,'w');
+		fp.write(image);
+		fp.close();
+		
+		
+    def fetchPage(self,url):
+	    try:
+	    	req=urllib2.Request(url,headers={'User-Agent' : "Magic Browser"});
+		response = urllib2.urlopen(req);
+	    except urllib2.HTTPError, e:
+	    	print e.fp.read();
+	    
+	    data = response.read();
+	    response.close();
+	    tree=lxml.html.fromstring(data);
+	    elements=tree.find_class("upimage");
+	    for element in elements:
+	    	data= lxml.html.tostring(element).split("\"")[1];
+	    return data
+		
+
+    
+    def fetchImage(self,url):	
+	    try:
+	    	req=urllib2.Request(url,headers={'User-Agent' : "Magic Browser"});
+		response = urllib2.urlopen(req);
+	    except urllib2.HTTPError, e:
+	    	print e.fp.read();
+	    
+	    data = response.read();
+	    response.close();
+	    return data;
+
+    def createPath(self, path, title):
+	    print title
+	    title = title.replace('/', '')
+            number = ''
+
+            if os.path.exists(path + title) == True and os.path.isdir(path + title) == False:
+            	while(os.path.exists(path + title + str(number)) == True and os.path.isdir(path + title + str(number)) == False):
+                	if number == '':
+                    		number = 0
+
+                	number = number + 1
+
+            if os.path.exists(path + title + str(number)) == False:
+            	os.mkdir(path + title + str(number))
+
+            return path + title + str(number)
+
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print 'Usage: turboimage [Source Folder] [DESTINATION_PATH]'
+        sys.exit(1)
+
+    downloader = DoujinshiDownloader()
+    if len(sys.argv) == 3:
+        downloader.setTarget(sys.argv[2] + '/')
+    else:
+        downloader.setTarget('./')
+    downloader.download(sys.argv[1]);

@@ -1,12 +1,12 @@
-youtube-dl-playlist(with proxy support)
+Turboimage downloader
 =======================================
 
-Pururin is doujinshi site, and this app is used for downloading doujinshi chapters from the site. 
+Turboimage is image repo, and this app is used for downloading  images in bulk from any given folder
 
-**Usage:** *pururin <SourceFile> <Destination>*
+**Usage:** *turboimage <SourceFolder> <Destination>*
 	   
-In List.txt, there will be url link of chapter, that you wish to download, and in case of multiple links, 
-each link sperated by newline. 
+In sourcefolder, there will be downloaded thumbnails of smaller images, that you wish to download.
+
 
 If the script fails in the middle of the playlist you can restart it with the 
 same options and should pick up where it left off.
